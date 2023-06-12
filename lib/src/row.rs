@@ -137,6 +137,13 @@ impl Node {
         self.inner.labels.iter().map(|l| l.to_string()).collect()
     }
 
+    pub fn props<T>(&self) -> Result<T, T::Error>
+    where
+        T: std::convert::TryFrom<BoltMap>,
+    {
+        self.inner.properties.clone().try_into()
+    }
+
     /// Get the attributes of the node
     pub fn get<T: std::convert::TryFrom<BoltType>>(&self, key: &str) -> Option<T> {
         self.inner.get(key)
