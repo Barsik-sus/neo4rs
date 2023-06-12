@@ -122,6 +122,20 @@ impl Row {
     pub fn get<T: std::convert::TryFrom<BoltType>>(&self, key: &str) -> Option<T> {
         self.attributes.get(key)
     }
+
+    pub fn get_typed<T>(&self, key: &str) -> Result<T, serde_json::Error>
+    where
+        T: Serialize + DeserializeOwned,
+    {
+        // unwrap can't fail because of get returns that implements TryFrom<BoltType>
+        match serde_json::to_value(&self.attributes.get::<BoltType>(key).unwrap()) {
+            Ok(value) => match serde_json::from_value(value) {
+                Ok(value) => Ok(value),
+                Err(err) => Err(err),
+            },
+            Err(err) => Err(err),
+        }
+    }
 }
 
 impl Node {

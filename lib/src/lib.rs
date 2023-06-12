@@ -772,3 +772,4 @@ pub use crate::row::{Node, Path, Point2D, Point3D, Relation, Row, UnboundedRelat
 pub use crate::stream::RowStream;
 pub use crate::txn::Txn;
 pub use crate::version::Version;
+pub use types::*;
