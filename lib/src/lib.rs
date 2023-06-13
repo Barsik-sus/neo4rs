@@ -764,11 +764,14 @@ mod txn;
 mod types;
 mod version;
 
-pub use crate::config::{Config, ConfigBuilder};
-pub use crate::errors::*;
-pub use crate::graph::{query, Graph};
-pub use crate::query::Query;
-pub use crate::row::{Node, Path, Point2D, Point3D, Relation, Row, UnboundedRelation};
-pub use crate::stream::RowStream;
-pub use crate::txn::Txn;
-pub use crate::version::Version;
+pub use config::{Config, ConfigBuilder};
+pub use errors::*;
+pub use graph::{query, Graph};
+pub use query::Query;
+pub use row::{Node, Path, Point2D, Point3D, Relation, Row, UnboundedRelation};
+pub use stream::RowStream;
+pub use txn::Txn;
+pub use version::Version;
+
+pub use types::*;
+pub use neo4rs_macros::FromBoltType;

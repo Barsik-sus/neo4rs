@@ -3,6 +3,86 @@ use quote::quote;
 use syn::parse_macro_input;
 use syn::{DeriveInput, MetaList};
 
+fn is_option(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(syn::TypePath { qself: None, path }) = ty {
+        let segments_str = &path
+            .segments
+            .iter()
+            .map(|segment| segment.ident.to_string())
+            .collect::<Vec<_>>()
+            .join(":");
+        ["Option", "std:option:Option", "core:option:Option"]
+            .iter()
+            .find(|s| segments_str == *s)
+            .is_some()
+    } else {
+        false
+    }
+}
+
+#[proc_macro_derive(FromBoltType)]
+pub fn from_bolt_type(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let struct_name = &ast.ident;
+
+    let fields = if let syn::Data::Struct(structure) = ast.data {
+        match structure.fields {
+            syn::Fields::Named(syn::FieldsNamed { named, .. }) => named,
+            syn::Fields::Unnamed(_) => {
+                unimplemented!(concat!(stringify!(#name), ": unnamed fields not supported"))
+            }
+            syn::Fields::Unit => syn::punctuated::Punctuated::new(),
+        }
+    } else {
+        unimplemented!(concat!(stringify!(#name), ": not a struct"));
+    };
+
+    let from_map_fields = fields.iter().map(|f| {
+        let name = &f.ident;
+        let ty = &f.ty;
+
+        if is_option(ty) {
+            quote! {
+                #name: value.get(stringify!(#name))
+            }
+        } else {
+            quote! {
+                #name: value.get(stringify!(#name)).unwrap()
+            }
+        }
+    });
+
+    let expanded = quote!(
+        impl From<BoltMap> for #struct_name {
+            fn from(value: BoltMap) -> Self {
+                Self {
+                    #(#from_map_fields,)*
+                }
+            }
+        }
+
+        impl From<BoltNode> for #struct_name {
+            fn from(value: BoltNode) -> Self {
+                let value = value.properties;
+                
+                value.into()
+            }
+        }
+
+        impl From<BoltType> for #struct_name {
+            fn from(value: BoltType) -> Self {
+                match value {
+                    BoltType::Map(inner) => inner.into(),
+                    BoltType::Node(inner) => inner.into(),
+                    v => panic!("{}: can not be made from {v:?}", stringify!(#struct_name))
+                }
+            }
+        }
+    );
+
+    expanded.into()
+}
+
 #[proc_macro_derive(BoltStruct, attributes(signature))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
